@@ -630,14 +630,22 @@ class WeexExchange(ExchangePyBase):
 
     async def _format_trading_rules(self, exchange_info_dict: Dict[str, Any]) -> List[TradingRule]:
         self.logger().info(f"[WEEX_DEBUG] _format_trading_rules() called with {len(exchange_info_dict.get('data', []))} trading pairs")
+        self._initialize_trading_pair_symbols_from_exchange_info(exchange_info=exchange_info_dict)
         rules: List[TradingRule] = []
+        unknown_symbols = set()
 
         for item in exchange_info_dict.get("data", []):
             if not item.get("enableTrade", False):
                 continue
 
             symbol = item["symbol"]
-            trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol=symbol)
+            try:
+                trading_pair = await self.trading_pair_associated_to_exchange_symbol(symbol=symbol)
+            except KeyError:
+                if symbol not in unknown_symbols:
+                    self.logger().warning(f"Unknown symbol '{symbol}' encountered during trading rules update - skipping this pair")
+                    unknown_symbols.add(symbol)
+                continue
 
             rules.append(
                 TradingRule(
