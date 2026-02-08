@@ -54,11 +54,11 @@ chmod 755 logs/mm logs/vol data/mm data/vol health
 
 # Build images
 echo -e "${GREEN}Building Docker images...${NC}"
-sudo docker-compose -f docker-compose.prod.yml --profile $PROFILE build
+sudo docker compose -f docker-compose.prod.yml --profile $PROFILE build
 
 # Start services
 echo -e "${GREEN}Starting services...${NC}"
-sudo docker-compose -f docker-compose.prod.yml --profile $PROFILE up -d
+sudo docker compose -f docker-compose.prod.yml --profile $PROFILE up -d
 
 # Wait for services to start
 echo -e "${GREEN}Waiting for services to start...${NC}"
@@ -69,7 +69,7 @@ echo ""
 echo -e "${GREEN}=====================================${NC}"
 echo -e "${GREEN}Deployment Status${NC}"
 echo -e "${GREEN}=====================================${NC}"
-sudo docker-compose -f docker-compose.prod.yml --profile $PROFILE ps
+sudo docker compose -f docker-compose.prod.yml --profile $PROFILE ps
 
 echo ""
 echo -e "${GREEN}=====================================${NC}"
@@ -82,12 +82,12 @@ echo ""
 echo -e "${GREEN}=====================================${NC}"
 echo -e "${GREEN}Useful Commands${NC}"
 echo -e "${GREEN}=====================================${NC}"
-echo -e "View all logs:         ${YELLOW}docker-compose -f docker-compose.prod.yml logs -f${NC}"
-echo -e "View MM bot logs:      ${YELLOW}docker-compose -f docker-compose.prod.yml logs -f hummingbot-mm${NC}"
-echo -e "View Vol bot logs:     ${YELLOW}docker-compose -f docker-compose.prod.yml logs -f hummingbot-vol${NC}"
-echo -e "View dashboard logs:   ${YELLOW}docker-compose -f docker-compose.prod.yml logs -f monitor-dashboard${NC}"
-echo -e "Stop all services:     ${YELLOW}docker-compose -f docker-compose.prod.yml down${NC}"
-echo -e "Restart a service:     ${YELLOW}docker-compose -f docker-compose.prod.yml restart <service-name>${NC}"
+echo -e "View all logs:         ${YELLOW}sudo docker compose -f docker-compose.prod.yml logs -f${NC}"
+echo -e "View MM bot logs:      ${YELLOW}sudo docker compose -f docker-compose.prod.yml logs -f hummingbot-mm${NC}"
+echo -e "View Vol bot logs:     ${YELLOW}sudo docker compose -f docker-compose.prod.yml logs -f hummingbot-vol${NC}"
+echo -e "View dashboard logs:   ${YELLOW}sudo docker compose -f docker-compose.prod.yml logs -f monitor-dashboard${NC}"
+echo -e "Stop all services:     ${YELLOW}sudo docker compose -f docker-compose.prod.yml down${NC}"
+echo -e "Restart a service:     ${YELLOW}sudo docker compose -f docker-compose.prod.yml restart <service-name>${NC}"
 echo -e "Shell into MM bot:     ${YELLOW}docker exec -it weex-market-maker bash${NC}"
 echo -e "Shell into Vol bot:    ${YELLOW}docker exec -it weex-volume-generator bash${NC}"
 echo ""
