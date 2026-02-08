@@ -10,8 +10,9 @@ NC='\033[0m'
 
 echo -e "${YELLOW}Stopping WEEX Trading Bot services...${NC}"
 
+
 # Stop all services
-sudo docker-compose -f docker-compose.prod.yml down
+sudo docker compose -f docker-compose.prod.yml down
 
 echo -e "${GREEN}All services stopped${NC}"
 echo ""

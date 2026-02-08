@@ -12,9 +12,8 @@ echo -e "${GREEN}WEEX Trading Bot Status${NC}"
 echo -e "${GREEN}=====================================${NC}"
 echo ""
 
-# Show container status
 echo -e "${YELLOW}Container Status:${NC}"
-sudo docker-compose -f docker-compose.prod.yml ps
+sudo docker compose -f docker-compose.prod.yml ps
 echo ""
 
 # Show health status
@@ -29,14 +28,13 @@ echo -e "${YELLOW}Resource Usage:${NC}"
 sudo docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" weex-market-maker weex-volume-generator weex-monitor-dashboard weex-monitor-api 2>/dev/null || echo "No containers running"
 echo ""
 
-# Show recent logs
 echo -e "${YELLOW}Recent Activity (last 10 lines per service):${NC}"
 echo ""
 echo -e "${GREEN}Market Maker:${NC}"
-docker-compose -f docker-compose.prod.yml logs --tail=10 hummingbot-mm 2>/dev/null || echo "Not running"
+docker compose -f docker-compose.prod.yml logs --tail=10 hummingbot-mm 2>/dev/null || echo "Not running"
 echo ""
 echo -e "${GREEN}Volume Generator:${NC}"
-docker-compose -f docker-compose.prod.yml logs --tail=10 hummingbot-vol 2>/dev/null || echo "Not running"
+docker compose -f docker-compose.prod.yml logs --tail=10 hummingbot-vol 2>/dev/null || echo "Not running"
 echo ""
 
 echo -e "${GREEN}=====================================${NC}"

@@ -32,6 +32,7 @@ echo ""
 echo -e "${YELLOW}Restoring from: $BACKUP_FILE${NC}"
 echo ""
 
+
 # Stop services first
 echo -e "${YELLOW}Stopping services...${NC}"
 ./stop.sh

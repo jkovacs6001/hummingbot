@@ -13,14 +13,15 @@ echo -e "${YELLOW}Updating WEEX Trading Bot services...${NC}"
 echo -e "${GREEN}Pulling latest code...${NC}"
 git pull || echo "Not a git repository or no updates available"
 
+
 # Rebuild images
 echo -e "${GREEN}Rebuilding Docker images...${NC}"
-sudo docker-compose -f docker-compose.prod.yml build --no-cache
+sudo docker compose -f docker-compose.prod.yml build --no-cache
 
 # Restart services with downtime
 echo -e "${YELLOW}Restarting services...${NC}"
-sudo docker-compose -f docker-compose.prod.yml down
-sudo docker-compose -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.prod.yml down
+sudo docker compose -f docker-compose.prod.yml up -d
 
 echo -e "${GREEN}Update complete!${NC}"
 echo ""
