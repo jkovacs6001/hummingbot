@@ -25,7 +25,7 @@ services:
       - SCRIPT_CONFIG=${MM_SCRIPT_CONFIG}
       - HEADLESS_MODE=${HEADLESS_MODE}
       - WEEX_API_KEY=${WEEX_MM1_API_KEY}
-      - WEEX_API_SECRET=${WEEX_MM1_API_SECRET}
+      - WEEX_SECRET_KEY=${WEEX_MM1_API_SECRET}
       - WEEX_PASSPHRASE=${WEEX_MM1_PASSPHRASE}
     logging:
       driver: "json-file"
@@ -68,7 +68,7 @@ services:
       - SCRIPT_CONFIG=${VOL_SCRIPT_CONFIG}
       - HEADLESS_MODE=${HEADLESS_MODE}
       - WEEX_API_KEY=${WEEX_VOL_API_KEY}
-      - WEEX_API_SECRET=${WEEX_VOL_API_SECRET}
+      - WEEX_SECRET_KEY=${WEEX_VOL_API_SECRET}
       - WEEX_PASSPHRASE=${WEEX_VOL_PASSPHRASE}
     logging:
       driver: "json-file"
