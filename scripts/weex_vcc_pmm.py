@@ -138,7 +138,8 @@ class WeexVccPMM(ScriptStrategyBase):
             self.create_timestamp = self.current_timestamp
             self.last_order_timestamp = 0.0
             if active_orders:
-                self.cancel_all_orders()
+                target_buy_prices, target_sell_prices = self.get_target_prices()
+                self.cancel_out_of_scope_orders(target_buy_prices, target_sell_prices)
                 self.pending_cancel_timestamp = self.current_timestamp
                 self.logger().info(f"Canceling {len(active_orders)} orders due to low active order count")
                 return
@@ -153,7 +154,8 @@ class WeexVccPMM(ScriptStrategyBase):
                 # Still have orders from previous cycle - cancel them and wait for them to clear
                 if self.pending_cancel_timestamp == 0:
                     # First time seeing old orders: initiate cancel
-                    self.cancel_all_orders()
+                    target_buy_prices, target_sell_prices = self.get_target_prices()
+                    self.cancel_out_of_scope_orders(target_buy_prices, target_sell_prices)
                     self.pending_cancel_timestamp = self.current_timestamp
                     self.logger().info(f"Canceling {len(active_orders)} old orders before placing new ones")
                     return
@@ -499,7 +501,8 @@ class WeexVccPMM(ScriptStrategyBase):
                 issues = health.get('issues', [])
                 self.logger().warning(f"MONITOR PAUSE REQUESTED: {', '.join(issues)}")
                 self.logger().warning("Canceling all orders and pausing trading")
-                self.cancel_all_orders()
+                target_buy_prices, target_sell_prices = self.get_target_prices()
+                self.cancel_out_of_scope_orders(target_buy_prices, target_sell_prices)
                 return False
 
             # Check health status
