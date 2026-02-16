@@ -90,6 +90,16 @@ class WeexVccPMM(ScriptStrategyBase):
     price_source = PriceType.MidPrice
     last_order_timestamp = 0  # Track last order placement time
 
+    def get_target_prices(self):
+        """
+        Returns lists of target buy and sell prices for the current cycle, based on proposal logic.
+        """
+        proposal = self.create_proposal()
+        proposal_adjusted = self.adjust_proposal_to_budget(proposal)
+        target_buy_prices = [float(p.price) for p in proposal_adjusted if p.order_side == TradeType.BUY]
+        target_sell_prices = [float(p.price) for p in proposal_adjusted if p.order_side == TradeType.SELL]
+        return target_buy_prices, target_sell_prices
+
     @classmethod
     def init_markets(cls, config: WeexVccPMMConfig):
         cls.markets = {config.exchange: {config.trading_pair}}
