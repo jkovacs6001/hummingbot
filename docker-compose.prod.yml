@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Market Making Bot Instance
   hummingbot-mm:
@@ -25,9 +23,9 @@ services:
       - CONFIG_FILE_NAME=weex_vcc_pmm.py
       - SCRIPT_CONFIG=${MM_SCRIPT_CONFIG}
       - HEADLESS_MODE=true
-      - WEEX_API_KEY=${WEEX_MM_API_KEY}
-      - WEEX_API_SECRET=${WEEX_MM_API_SECRET}
-      - WEEX_PASSPHRASE=${WEEX_MM_PASSPHRASE}
+      - WEEX_API_KEY=${WEEX_MM1_API_KEY}
+      - WEEX_API_SECRET=${WEEX_MM1_API_SECRET}
+      - WEEX_PASSPHRASE=${WEEX_MM1_PASSPHRASE}
     logging:
       driver: "json-file"
       options:
@@ -133,12 +131,12 @@ services:
       - ./health:/home/hummingbot/health
       - ./logs/monitor:/home/hummingbot/logs
     environment:
-      - WEEX_MM_API_KEY=${WEEX_MM_API_KEY}
-      - WEEX_MM_API_SECRET=${WEEX_MM_API_SECRET}
-      - WEEX_MM_PASSPHRASE=${WEEX_MM_PASSPHRASE}
-      - WEEX_VOL_API_KEY=${WEEX_VOL_API_KEY}
-      - WEEX_VOL_API_SECRET=${WEEX_VOL_API_SECRET}
-      - WEEX_VOL_PASSPHRASE=${WEEX_VOL_PASSPHRASE}
+      - WEEX_MM_API_KEY=${WEEX_MM1_MONITOR_API_KEY}
+      - WEEX_MM_API_SECRET=${WEEX_MM1_MONITOR_API_SECRET}
+      - WEEX_MM_PASSPHRASE=${WEEX_MM1_MONITOR_PASSPHRASE}
+      - WEEX_VOL_API_KEY=${WEEX_VOL_MONITOR_API_KEY}
+      - WEEX_VOL_API_SECRET=${WEEX_VOL_MONITOR_API_SECRET}
+      - WEEX_VOL_PASSPHRASE=${WEEX_VOL_MONITOR_PASSPHRASE}
       - WEEX_MONITOR_CONSOLE_LEVEL=${WEEX_MONITOR_CONSOLE_LEVEL:-INFO}
     restart: unless-stopped
     networks:

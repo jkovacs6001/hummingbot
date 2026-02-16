@@ -533,29 +533,49 @@ class WeexVccPMM(ScriptStrategyBase):
             self.logger().error(f"Error reading monitor health file: {e}")
             return True  # Continue on error - don't halt trading due to file read issues
 
-    def cancel_all_orders(self):
+    def cancel_out_of_scope_orders(self, target_buy_prices, target_sell_prices):
         """
-        Cancels all active orders on the exchange using batch cancel.
-        Reduces API weight from 8 cancels × 3 weight = 24 to 1 batch × 10 weight = 10.
-
-        Simply initiates the cancel without waiting - on_tick() handles the wait logic.
+        Batch cancel only orders outside the new target min/max scope.
         """
         connector = self.connectors.get(self.config.exchange)
         if not connector or not hasattr(connector, '_order_tracker'):
             return
 
         connector_active = list(connector._order_tracker.active_orders.values())
-
         if not connector_active:
             return
 
-        # Convert to LimitOrder objects for batch cancel
-        limit_orders = []
+        orders_to_cancel = []
+        buy_count = 0
+        sell_count = 0
         for order in connector_active:
-            # Skip orders without exchange_order_id - prevents FAILED_ORDER_NOT_FOUND
             if not order.exchange_order_id:
                 self.logger().debug(f"Skipping cancel for {order.client_order_id}: no exchange_order_id yet")
                 continue
+            price = float(order.price)
+            if order.trade_type == TradeType.BUY:
+                buy_count += 1
+                if price not in target_buy_prices:
+                    orders_to_cancel.append(order)
+            elif order.trade_type == TradeType.SELL:
+                sell_count += 1
+                if price not in target_sell_prices:
+                    orders_to_cancel.append(order)
+
+        # Enforce strict 15-per-side order count
+        if buy_count > 15 or sell_count > 15:
+            self.logger().warning(f"Order count exceeded: {buy_count} buys, {sell_count} sells. Cancelling excess.")
+            for order in connector_active:
+                if order.trade_type == TradeType.BUY and buy_count > 15:
+                    orders_to_cancel.append(order)
+                    buy_count -= 1
+                elif order.trade_type == TradeType.SELL and sell_count > 15:
+                    orders_to_cancel.append(order)
+                    sell_count -= 1
+
+        # Convert to LimitOrder objects for batch cancel
+        limit_orders = []
+        for order in orders_to_cancel:
             limit_order = LimitOrder(
                 client_order_id=order.client_order_id,
                 trading_pair=order.trading_pair,
@@ -567,10 +587,9 @@ class WeexVccPMM(ScriptStrategyBase):
             )
             limit_orders.append(limit_order)
 
-        # Use batch cancel (fire-and-forget)
         if limit_orders:
             connector.batch_order_cancel(orders_to_cancel=limit_orders)
-            self.logger().info(f"Batch cancel initiated for {len(limit_orders)} orders")
+            self.logger().info(f"Batch cancel initiated for {len(limit_orders)} out-of-scope/excess orders")
 
     def did_fill_order(self, event: OrderFilledEvent):
         """
