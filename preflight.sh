@@ -39,8 +39,8 @@ check_version() {
         docker)
             current_version=$(docker --version | grep -oP '\d+\.\d+\.\d+' | head -1)
             ;;
-        docker-compose)
-            current_version=$(docker-compose --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+        "docker compose")
+            current_version=$(docker compose version | grep -oP '\d+\.\d+\.\d+' | head -1)
             ;;
     esac
 
@@ -52,7 +52,13 @@ check_version() {
 # Check essential commands
 echo -e "${YELLOW}Checking required software...${NC}"
 check_command docker && check_version docker "20.10.0"
-check_command docker-compose && check_version docker-compose "2.0.0"
+if docker compose version &> /dev/null; then
+    echo -e "✅ docker compose is installed"
+    echo -e "   Version: $(docker compose version | grep -oP '\d+\.\d+\.\d+' | head -1) (minimum: 2.0.0)"
+else
+    echo -e "${RED}❌ docker compose is NOT installed${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
 check_command git
 check_command tar
 check_command curl
