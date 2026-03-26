@@ -11,6 +11,7 @@ from pydantic import Field
 from hummingbot.client.config.config_data_types import BaseClientModel
 from hummingbot.connector.connector_base import ConnectorBase
 from hummingbot.core.data_type.common import OrderType, PriceType, TradeType
+from hummingbot.core.data_type.limit_order import LimitOrder
 from hummingbot.core.data_type.order_candidate import OrderCandidate
 from hummingbot.core.event.events import BuyOrderCompletedEvent, OrderFilledEvent, SellOrderCompletedEvent
 from hummingbot.strategy.script_strategy_base import ScriptStrategyBase
@@ -49,8 +50,8 @@ class WeexVolumeGeneratorConfig(BaseClientModel):
         description="Random variance in order size (0.3 = ±30% from target)"
     )
     order_type: str = Field(
-        default="market",
-        description="Order type: 'market' (recommended) or 'limit_cross_spread'"
+        default="limit_cross_spread",
+        description="Order type: 'limit_cross_spread' (recommended) or 'market' (uses single order API)"
     )
 
     # Interval Randomization
@@ -152,6 +153,15 @@ class WeexVolumeGenerator(ScriptStrategyBase):
             # Calculate current inventory deviation
             self._update_inventory_deviation()
 
+            # Hard stop if deviation exceeds configured maximum
+            if abs(self.current_inventory_deviation) > self.config.max_inventory_deviation:
+                self.logger().warning(
+                    f"Inventory deviation {self.current_inventory_deviation:.0f} exceeds max "
+                    f"({float(self.config.max_inventory_deviation):.0f}), skipping trade"
+                )
+                self.create_timestamp = self.current_timestamp + self._get_randomized_interval()
+                return
+
             # Determine trade direction (buy/sell)
             trade_side = self._determine_trade_direction()
 
@@ -159,22 +169,19 @@ class WeexVolumeGenerator(ScriptStrategyBase):
             if self.ready_to_trade:
                 order = self._create_volume_order(trade_side)
                 if order:
-                    if trade_side == TradeType.BUY:
-                        order_id = self.buy(
-                            connector_name=self.config.exchange,
-                            trading_pair=self.config.trading_pair,
-                            amount=order.amount,
-                            order_type=order.order_type,
-                            price=order.price
-                        )
-                    else:
-                        order_id = self.sell(
-                            connector_name=self.config.exchange,
-                            trading_pair=self.config.trading_pair,
-                            amount=order.amount,
-                            order_type=order.order_type,
-                            price=order.price
-                        )
+                    connector = self.connectors[self.config.exchange]
+                    base, quote = self.config.trading_pair.split("-")
+                    limit_order = LimitOrder(
+                        client_order_id="",
+                        trading_pair=self.config.trading_pair,
+                        is_buy=(trade_side == TradeType.BUY),
+                        base_currency=base,
+                        quote_currency=quote,
+                        price=order.price,
+                        quantity=order.amount,
+                    )
+                    created = connector.batch_order_create(orders_to_create=[limit_order])
+                    order_id = created[0].client_order_id if created else None
                     if order_id:
                         self._order_meta[order_id] = {
                             "amount": order.amount,
@@ -365,13 +372,12 @@ class WeexVolumeGenerator(ScriptStrategyBase):
                 with open(self.monitor_health_file, 'r') as f:
                     health_data = json.load(f)
 
-                if health_data.get("status") == "paused":
-                    self.logger().warning("[MONITOR] Trading paused by external monitor")
+                if health_data.get("pause_requested", False):
+                    self.logger().warning(f"[MONITOR] Pause requested: {health_data.get('issues', [])}")
                     return False
 
-                if health_data.get("status") == "error":
-                    self.logger().error(f"[MONITOR] Error state: {health_data.get('message', 'Unknown error')}")
-                    return False
+                if not health_data.get("healthy", True):
+                    self.logger().warning(f"[MONITOR] Health warning: {health_data.get('issues', [])}")
         except Exception as e:
             self.logger().debug(f"Could not read monitor health file: {e}")
 

@@ -94,10 +94,17 @@ class WeexVccPMM(ScriptStrategyBase):
         """
         Returns lists of target buy and sell prices for the current cycle, based on proposal logic.
         """
+        connector = self.connectors[self.config.exchange]
         proposal = self.create_proposal()
         proposal_adjusted = self.adjust_proposal_to_budget(proposal)
-        target_buy_prices = [float(p.price) for p in proposal_adjusted if p.order_side == TradeType.BUY]
-        target_sell_prices = [float(p.price) for p in proposal_adjusted if p.order_side == TradeType.SELL]
+        target_buy_prices = [
+            connector.quantize_order_price(self.config.trading_pair, p.price)
+            for p in proposal_adjusted if p.order_side == TradeType.BUY
+        ]
+        target_sell_prices = [
+            connector.quantize_order_price(self.config.trading_pair, p.price)
+            for p in proposal_adjusted if p.order_side == TradeType.SELL
+        ]
         return target_buy_prices, target_sell_prices
 
     @classmethod
@@ -565,14 +572,15 @@ class WeexVccPMM(ScriptStrategyBase):
             if not order.exchange_order_id:
                 self.logger().debug(f"Skipping cancel for {order.client_order_id}: no exchange_order_id yet")
                 continue
-            price = float(order.price)
+            price = connector.quantize_order_price(order.trading_pair, order.price)
+            is_stale = (self.current_timestamp - order.creation_timestamp) > self.config.max_order_age
             if order.trade_type == TradeType.BUY:
                 buy_count += 1
-                if price not in target_buy_prices:
+                if price not in target_buy_prices or is_stale:
                     orders_to_cancel.append(order)
             elif order.trade_type == TradeType.SELL:
                 sell_count += 1
-                if price not in target_sell_prices:
+                if price not in target_sell_prices or is_stale:
                     orders_to_cancel.append(order)
 
         # Enforce strict 15-per-side order count
@@ -621,8 +629,11 @@ class WeexVccPMM(ScriptStrategyBase):
         # timestamps, the database can try to insert the same order twice, causing
         # UNIQUE constraint violations on Order.id
         # The 120-second refresh cycle safely handles replenishment.
-        if False:  # self.config.immediate_replenishment:
-            pass
+        if self.config.immediate_replenishment:
+            # Advance the refresh timer instead of placing directly in the event handler.
+            # Placing orders here risks a UNIQUE constraint violation because the DB is still
+            # writing the just-filled order. A 3-second gap is sufficient.
+            self.create_timestamp = min(self.create_timestamp, self.current_timestamp + 3)
 
     def format_status(self) -> str:
         """
