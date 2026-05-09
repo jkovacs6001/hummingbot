@@ -676,6 +676,18 @@ class ExchangePyBase(ExchangeBase, ABC):
         await self.stop_network()
         self.order_book_tracker.start()
         if self.is_trading_required:
+            # Eagerly fetch trading rules and balances on startup before polling loops
+            # This ensures status_dict reflects initialized state quickly
+            self.logger().info("[DEBUG] start_network: Beginning eager initialization")
+            try:
+                await safe_gather(
+                    self._update_trading_rules(),
+                    self._update_balances()
+                )
+                self.logger().info("[DEBUG] start_network: Eager initialization completed")
+            except Exception as e:
+                self.logger().warning(f"[DEBUG] Error during eager initialization: {e}")
+
             self._trading_rules_polling_task = safe_ensure_future(self._trading_rules_polling_loop())
             self._trading_fees_polling_task = safe_ensure_future(self._trading_fees_polling_loop())
             self._status_polling_task = safe_ensure_future(self._status_polling_loop())
@@ -887,6 +899,7 @@ class ExchangePyBase(ExchangeBase, ABC):
         self._trading_rules.clear()
         for trading_rule in trading_rules_list:
             self._trading_rules[trading_rule.trading_pair] = trading_rule
+        self.logger().info(f"[DEBUG] _update_trading_rules completed: {len(self._trading_rules)} rules stored")
         self._initialize_trading_pair_symbols_from_exchange_info(exchange_info=exchange_info)
 
     async def _api_get(self, *args, **kwargs):
